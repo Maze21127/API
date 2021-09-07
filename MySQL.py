@@ -1,6 +1,5 @@
 import pymysql
 from student import Student
-from main import update
 
 
 class MySQL:
@@ -18,8 +17,8 @@ class MySQL:
             self.cursor = self.connection.cursor()
             print('Курсор получен успешно')
             try:
-                self.db = self.get_data()
-                self.cache_db = self.get_student_set()
+                self.db = self.get_data_from_db()
+                self.cache_db = list(self.db)
             finally:
                 self.connection.close()
                 print('Соединение закрыто')
@@ -30,20 +29,40 @@ class MySQL:
         self.connection.ping()
         insert_query = f"REPLACE INTO students (place, snils, accept, payment, benefits, total_score," \
                        f" first_obj, second_obj, third_obj) VALUES (" \
-                       f"{stud.place}, '{stud.snils}', '{stud.accept}', '{stud.payment}', '{stud.benefits}', " \
-                       f"{stud.total_score}, '{stud.first_obj}', '{stud.second_obj}', '{stud.third_obj}'" \
+                       f"{stud['place']}," \
+                       f"'{stud['snils']}'," \
+                       f"'{stud['accept']}'," \
+                       f"'{stud['payment']}'," \
+                       f"'{stud['benefits']}', " \
+                       f"{stud['total_score']}," \
+                       f"'{stud['first_obj']}'," \
+                       f"'{stud['second_obj']}', " \
+                       f"'{stud['third_obj']}'" \
                        f")"
         print(insert_query)
         self.cursor.execute(insert_query)
         self.connection.commit()
 
-    def get_data(self):
+    def delete_stud(self, stud):
+        self.connection.ping()
+        insert_query = f"DELETE FROM students WHERE snils='{stud['snils']}'"
+        self.cursor.execute(insert_query)
+        self.connection.commit()
+
+    def delete_stud_snils(self, snils):
+        self.connection.ping()
+        insert_query = f"DELETE FROM students WHERE snils='{snils}'"
+        self.cursor.execute(insert_query)
+        self.connection.commit()
+
+    def get_data_from_db(self):
         self.cursor.execute("SELECT * FROM students ORDER BY place")
         return tuple(self.cursor.fetchall())
 
     def update_bd(self):
         self.cursor.execute("SELECT * FROM students ORDER BY place")
         self.db = self.cursor.fetchall()
+        self.cache_db = list(self.db)
 
     def print_data(self):
         for row in self.db:
@@ -53,7 +72,9 @@ class MySQL:
         return self.db[0:number]
 
     def get_last(self, number=-1):
-        return self.db[-number:]
+        if number != -1:
+            return self.db[-number:]
+        return self.db[number:]
 
     def get_place(self, score):
         bd_len = len(self.db)
@@ -77,7 +98,7 @@ class MySQL:
                 return stud
 
     def get_student_set(self):
-        students_set = list()
+        students_set = []
         for i in self.db:
             stud = Student(
                 i['place'],
@@ -90,18 +111,21 @@ class MySQL:
                 i['second_obj'].strip(),
                 i['third_obj'].strip())
             students_set.append(stud)
-        return list(students_set)
+        #print(students_set)
+        return students_set
 
     def is_new(self):
-        temp = update()
-        if temp == self.cache_db:
-            print('Изменений нет')
+        temp = Student.get_students_dict()
+        if temp != self.cache_db:
+            print("Есть изменения")
+            diff_to_insert = [item for item in temp if item not in self.cache_db]
+            diff_to_delete = [item for item in self.cache_db if item not in temp]
+            print(len(diff_to_delete))
+            for i in diff_to_insert:
+                self.insert_data(i)
+            for i in diff_to_delete:
+                self.delete_stud(i)
+            self.update_bd()
         else:
-            #print(temp - self.cache_bd)
-            print(temp[0])
-            print(self.cache_db[0])
-            print('Изменения есть')
+            print("Изменений нет")
 
-
-sql = MySQL(host='localhost', port=3306, user='admin', password='zxcdewqas322', database='myapi')
-sql.is_new()
