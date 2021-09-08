@@ -1,5 +1,6 @@
 import pymysql
-from student import Student
+from vvsu_parse import VVSU_Parse
+import time
 
 
 class MySQL:
@@ -28,7 +29,7 @@ class MySQL:
     def insert_data(self, stud):
         self.connection.ping()
         insert_query = f"REPLACE INTO students (place, snils, accept, payment, benefits, total_score," \
-                       f" first_obj, second_obj, third_obj) VALUES (" \
+                       f" first_obj, second_obj, third_obj, achievements) VALUES (" \
                        f"{stud['place']}," \
                        f"'{stud['snils']}'," \
                        f"'{stud['accept']}'," \
@@ -37,11 +38,13 @@ class MySQL:
                        f"{stud['total_score']}," \
                        f"'{stud['first_obj']}'," \
                        f"'{stud['second_obj']}', " \
-                       f"'{stud['third_obj']}'" \
+                       f"'{stud['third_obj']}', " \
+                       f"{stud['achievements']}" \
                        f")"
         print(insert_query)
         self.cursor.execute(insert_query)
         self.connection.commit()
+        #print(f'{insert_query} success!')
 
     def delete_stud(self, stud):
         self.connection.ping()
@@ -57,7 +60,7 @@ class MySQL:
 
     def get_data_from_db(self):
         self.cursor.execute("SELECT * FROM students ORDER BY place")
-        return tuple(self.cursor.fetchall())
+        return list(self.cursor.fetchall())
 
     def update_bd(self):
         self.cursor.execute("SELECT * FROM students ORDER BY place")
@@ -97,30 +100,15 @@ class MySQL:
             if stud['snils'] == snils:
                 return stud
 
-    def get_student_set(self):
-        students_set = []
-        for i in self.db:
-            stud = Student(
-                i['place'],
-                i['snils'].strip(),
-                i['accept'].strip(),
-                i['payment'].strip(),
-                i['benefits'].strip(),
-                i['total_score'],
-                i['first_obj'].strip(),
-                i['second_obj'].strip(),
-                i['third_obj'].strip())
-            students_set.append(stud)
-        #print(students_set)
-        return students_set
-
     def is_new(self):
-        temp = Student.get_students_dict()
+        start = time.time()
+        vvsu = VVSU_Parse()
+        vvsu.update()
+        temp = vvsu.get_students_list()
         if temp != self.cache_db:
             print("Есть изменения")
             diff_to_insert = [item for item in temp if item not in self.cache_db]
             diff_to_delete = [item for item in self.cache_db if item not in temp]
-            print(len(diff_to_delete))
             for i in diff_to_insert:
                 self.insert_data(i)
             for i in diff_to_delete:
@@ -128,4 +116,4 @@ class MySQL:
             self.update_bd()
         else:
             print("Изменений нет")
-
+        print(f'time {time.time() - start}')
