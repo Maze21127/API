@@ -1,5 +1,6 @@
 import pymysql
 from vvsu_parse import VVSU_Parse
+from random import choice
 import time
 
 
@@ -14,12 +15,9 @@ class MySQL:
                 database=database,
                 cursorclass=pymysql.cursors.DictCursor
             )
-            print("Подключение успешно")
             self.cursor = self.connection.cursor()
-            print('Курсор получен успешно')
             try:
                 self.db = self.get_data_from_db()
-                self.cache_db = list(self.db)
             finally:
                 self.connection.close()
                 print('Соединение закрыто')
@@ -65,7 +63,6 @@ class MySQL:
     def update_bd(self):
         self.cursor.execute("SELECT * FROM students ORDER BY place")
         self.db = self.cursor.fetchall()
-        self.cache_db = list(self.db)
 
     def print_data(self):
         for row in self.db:
@@ -73,6 +70,9 @@ class MySQL:
 
     def get_best(self, number=1):
         return self.db[0:number]
+
+    def get_random(self, number=1):
+        return [choice(self.db) for _ in range(number)]
 
     def get_last(self, number=-1):
         if number != -1:
@@ -91,29 +91,36 @@ class MySQL:
                 high = mid - 1
             mid = (low + high) // 2
         if low > high:
-            return mid + 2
+            return {"place": mid + 2}
         else:
-            return mid + 1
+            return {"place": mid + 1}
 
-    def find_snils(self, snils: str) -> dict:
+    def find_student_by_snils(self, snils: str):
         for stud in self.db:
             if stud['snils'] == snils:
                 return stud
+        return f'Student not found'
+
+    def find_student_by_place(self, place: int):
+        for stud in self.db:
+            if stud['place'] == place:
+                return stud
+        return f'Student not found'
 
     def is_new(self):
         start = time.time()
         vvsu = VVSU_Parse()
         vvsu.update()
         temp = vvsu.get_students_list()
-        if temp != self.cache_db:
+        if temp != self.db:
             print("Есть изменения")
-            diff_to_insert = [item for item in temp if item not in self.cache_db]
-            diff_to_delete = [item for item in self.cache_db if item not in temp]
+            diff_to_insert = [item for item in temp if item not in self.db]
+            diff_to_delete = [item for item in self.db if item not in temp]
             for i in diff_to_insert:
                 self.insert_data(i)
             for i in diff_to_delete:
                 self.delete_stud(i)
             self.update_bd()
+            return "Database is Updated"
         else:
-            print("Изменений нет")
-        print(f'time {time.time() - start}')
+            return "Database has no changes"
