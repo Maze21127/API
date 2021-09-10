@@ -1,7 +1,7 @@
 import pymysql
 from vvsu_parse import VVSU_Parse
 from random import choice
-import time
+from create_auth import *
 
 
 class MySQL:
@@ -18,6 +18,9 @@ class MySQL:
             self.cursor = self.connection.cursor()
             try:
                 self.db = self.get_data_from_db()
+                self.admins = None
+                self.users = None
+                self.update_users()
             finally:
                 self.connection.close()
                 print('Соединение закрыто')
@@ -42,12 +45,10 @@ class MySQL:
         print(insert_query)
         self.cursor.execute(insert_query)
         self.connection.commit()
-        #print(f'{insert_query} success!')
 
     def delete_stud(self, stud):
         self.connection.ping()
-        insert_query = f"DELETE FROM students WHERE snils='{stud['snils']}'"
-        self.cursor.execute(insert_query)
+        self.cursor.execute(f"DELETE FROM students WHERE snils='{stud['snils']}'")
         self.connection.commit()
 
     def delete_stud_snils(self, snils):
@@ -55,6 +56,25 @@ class MySQL:
         insert_query = f"DELETE FROM students WHERE snils='{snils}'"
         self.cursor.execute(insert_query)
         self.connection.commit()
+
+    def get_users(self):
+        self.cursor.execute("SELECT token, admin FROM users ORDER BY admin")
+        return list(self.cursor.fetchall())
+
+    def update_users(self):
+        temp = self.get_users()
+        self.admins = [user['token'] for user in temp if user['admin'] == 1]
+        self.users = self.admins + [user['token'] for user in self.get_users() if user['admin'] == 0]
+
+    def create_user(self):
+        key = get_key()
+        insert_query = f"INSERT INTO users (token, admin) values ('{get_hash(key)}', false)"
+        self.connection.ping()
+        self.cursor.execute(insert_query)
+        print(insert_query)
+        self.connection.commit()
+        self.update_users()
+        return key
 
     def get_data_from_db(self):
         self.cursor.execute("SELECT * FROM students ORDER BY place")
@@ -108,7 +128,6 @@ class MySQL:
         return f'Student not found'
 
     def is_new(self):
-        start = time.time()
         vvsu = VVSU_Parse()
         vvsu.update()
         temp = vvsu.get_students_list()

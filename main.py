@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, render_template
 from flask_restful import Api, reqparse
 from MySQL import MySQL
-import hashlib
+from create_auth import *
+
 
 from settings import *
 
@@ -22,7 +23,12 @@ def home():
 def get_best():
     parser = reqparse.RequestParser()
     parser.add_argument('count', type=int)
+    parser.add_argument('token')
     params = parser.parse_args()
+    if params['token'] is None:
+        return "Missing 1 required parameter 'token'", 400
+    if get_hash(params['token']) not in sql.users:
+        return "Invalid token, access denied", 403
     if params['count'] is None:
         return jsonify(sql.get_best()[0])
     return jsonify(sql.get_best(params['count']))
@@ -33,7 +39,12 @@ def get_best():
 def get_last():
     parser = reqparse.RequestParser()
     parser.add_argument('count', type=int)
+    parser.add_argument('token')
     params = parser.parse_args()
+    if params['token'] is None:
+        return "Missing 1 required parameter 'token'", 400
+    if get_hash(params['token']) not in sql.users:
+        return "Invalid token, access denied", 403
     if params['count'] is None:
         return jsonify(sql.get_last()[0])
     return jsonify(sql.get_last(params['count']))
@@ -44,10 +55,15 @@ def get_last():
 def get_random():
     parser = reqparse.RequestParser()
     parser.add_argument('count', type=int)
+    parser.add_argument('token')
     params = parser.parse_args()
-    if params['count'] is None:
-        return jsonify(sql.get_random()[0])
-    return jsonify(sql.get_random(params['count']))
+    if params['token'] is None:
+        return "Missing 1 required parameter 'token'", 400
+    if get_hash(params['token']) in sql.users:
+        if params['count'] is None:
+            return jsonify(sql.get_random()[0])
+        return jsonify(sql.get_random(params['count']))
+    return "Invalid token, access denied", 403
 
 
 @app.route('/place', methods=['GET', 'POST'])
@@ -55,7 +71,12 @@ def get_random():
 def get_place_by_score():
     parser = reqparse.RequestParser()
     parser.add_argument('score')
+    parser.add_argument('token')
     params = parser.parse_args()
+    if params['token'] is None:
+        return "Missing 1 required parameter 'token'", 400
+    if get_hash(params['token']) not in sql.users:
+        return "Invalid token, access denied", 403
     try:
         return jsonify(sql.get_place(int(params['score'])))
     except ValueError:
@@ -70,7 +91,12 @@ def find_student():
     parser = reqparse.RequestParser()
     parser.add_argument('place')
     parser.add_argument('snils', type=str)
+    parser.add_argument('token')
     params = parser.parse_args()
+    if params['token'] is None:
+        return "Missing 1 required parameter 'token'", 400
+    if get_hash(params['token']) not in sql.users:
+        return "Invalid token, access denied", 403
     if params['place'] is not None:
         try:
             return jsonify(sql.find_student_by_place(int(params['place'])))
@@ -87,10 +113,11 @@ def update_db():
     parser = reqparse.RequestParser()
     parser.add_argument('token')
     params = parser.parse_args()
-    if params['token'] == UPDATE_TOKEN:
-        return sql.is_new()
-    else:
+    if params['token'] is None:
         return "Invalid token, access denied", 403
+    if get_hash(params['token']) not in sql.admins:
+        return "Invalid token, access denied", 403
+    return sql.is_new()
 
 
 @app.route('/admin', methods=['GET', 'POST'])
@@ -99,15 +126,27 @@ def admin_page():
     parser = reqparse.RequestParser()
     parser.add_argument('password')
     params = parser.parse_args()
-    temp = params['password'] + SALT
+    if params['password'] is None:
+        return "Invalid password, access denied", 403
     try:
-        if hashlib.md5(temp.encode()).hexdigest() == ADMIN_PASSWORD:
+        if get_hash(params['password']) == ADMIN_PASSWORD:
             return jsonify({
-                'update_token': UPDATE_TOKEN})
+                'admin_token': ADMIN_TOKEN})
         else:
             return "Invalid password, access denied", 403
     except AttributeError:
         return "Invalid password, access denied", 403
+
+
+@app.route('/create-user', methods=['GET', 'POST'])
+@app.route('/create-user/', methods=['GET', 'POST'], strict_slashes=False)
+def create_user():
+    parser = reqparse.RequestParser()
+    parser.add_argument('token')
+    params = parser.parse_args()
+    if get_hash(params['token']) not in sql.admins:
+        return "Invalid token, access denied", 403
+    return sql.create_user()
 
 
 api = Api(app)
