@@ -2,8 +2,6 @@ from flask import Flask, jsonify, render_template
 from flask_restful import Api, reqparse
 from MySQL import MySQL
 from create_auth import *
-
-
 from settings import *
 
 
@@ -15,7 +13,8 @@ app.config['JSON_AS_ASCII'] = False
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return "/admin/?password=zxcdewqas322"
+    #return render_template('index.html')
 
 
 @app.route('/best', methods=['GET', 'POST'])
@@ -150,4 +149,4 @@ def create_user():
 
 
 api = Api(app)
-app.run(debug=True)
+app.run(debug=True, host='0.0.0.0', port=5000)

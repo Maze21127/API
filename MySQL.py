@@ -71,7 +71,6 @@ class MySQL:
         insert_query = f"INSERT INTO users (token, admin) values ('{get_hash(key)}', false)"
         self.connection.ping()
         self.cursor.execute(insert_query)
-        print(insert_query)
         self.connection.commit()
         self.update_users()
         return key
