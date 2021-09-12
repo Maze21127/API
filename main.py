@@ -1,20 +1,40 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request, redirect
 from flask_restful import Api, reqparse
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer
 from MySQL import MySQL
 from create_auth import *
 from settings import *
+from waitress import serve
 
 
 sql = MySQL(host=HOST, port=PORT, user=LOGIN, password=PASSWORD, database=DATABASE)
 
 app = Flask('MyFirstAPI')
-app.config['JSON_AS_ASCII'] = False
+app.config.from_pyfile('config.cfg')
+
+mail = Mail(app)
+ser = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
 @app.route('/')
 def home():
-    return "/admin/?password=zxcdewqas322"
-    #return render_template('index.html')
+    return render_template('index.html')
+
+
+@app.route('/main')
+def main_page():
+    return render_template('main_page.html')
+
+
+@app.route('/incorrect-email')
+def incorrect_email_page():
+    return render_template('incorrect-email.html')
+
+
+@app.route('/user-exists')
+def user_exists_page():
+    return render_template('user-exist.html')
 
 
 @app.route('/best', methods=['GET', 'POST'])
@@ -119,6 +139,54 @@ def update_db():
     return sql.is_new()
 
 
+@app.route('/delete', methods=['GET'])
+@app.route('/delete/', methods=['GET', 'POST'], strict_slashes=False)
+def delete_user():
+    parser = reqparse.RequestParser()
+    parser.add_argument('token')
+    parser.add_argument('email')
+    params = parser.parse_args()
+    if params['token'] is None:
+        return "Invalid token, access denied", 403
+    if get_hash(params['token']) not in sql.admins:
+        return "Invalid token, access denied", 403
+    return sql.delete_user(params['email'])
+
+
+@app.route('/users', methods=['GET'])
+@app.route('/users/', methods=['GET', 'POST'], strict_slashes=False)
+def show_users():
+    parser = reqparse.RequestParser()
+    parser.add_argument('token')
+    params = parser.parse_args()
+    if params['token'] is None:
+        return "Invalid token, access denied", 403
+    if get_hash(params['token']) not in sql.admins:
+        return "Invalid token, access denied", 403
+    return jsonify([user['email'] for user in sql.get_users_list()])
+
+
+@app.route('/get-token', methods=['GET', 'POST'])
+@app.route('/get-token/', methods=['GET', 'POST'], strict_slashes=False)
+def get_token():
+    if request.method == 'GET':
+        return '<form action="/" method="POST"><input name="email"><input type="submit"></form>'
+
+    email = request.form["email"]
+    if email in sql.emails:
+        return redirect('/user-exists')
+
+    if '@' not in email:
+        return redirect('/incorrect-email')
+
+    msg = Message('VVSU API TOKEN', sender=EMAIL, recipients=[email])
+    msg.body = f'Your token is {sql.create_user(email)}'
+    mail.send(msg)
+
+    sql.update_bd()
+    return redirect('/main')
+
+
 @app.route('/admin', methods=['GET', 'POST'])
 @app.route('/admin/', methods=['GET', 'POST'], strict_slashes=False)
 def admin_page():
@@ -137,16 +205,5 @@ def admin_page():
         return "Invalid password, access denied", 403
 
 
-@app.route('/create-user', methods=['GET', 'POST'])
-@app.route('/create-user/', methods=['GET', 'POST'], strict_slashes=False)
-def create_user():
-    parser = reqparse.RequestParser()
-    parser.add_argument('token')
-    params = parser.parse_args()
-    if get_hash(params['token']) not in sql.admins:
-        return "Invalid token, access denied", 403
-    return sql.create_user()
-
-
 api = Api(app)
-app.run(debug=True, host='0.0.0.0', port=5000)
+serve(app, host='0.0.0.0', port=5000)

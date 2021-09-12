@@ -20,6 +20,7 @@ class MySQL:
                 self.db = self.get_data_from_db()
                 self.admins = None
                 self.users = None
+                self.emails = None
                 self.update_users()
             finally:
                 self.connection.close()
@@ -42,7 +43,6 @@ class MySQL:
                        f"'{stud['third_obj']}', " \
                        f"{stud['achievements']}" \
                        f")"
-        print(insert_query)
         self.cursor.execute(insert_query)
         self.connection.commit()
 
@@ -57,23 +57,37 @@ class MySQL:
         self.cursor.execute(insert_query)
         self.connection.commit()
 
-    def get_users(self):
-        self.cursor.execute("SELECT token, admin FROM users ORDER BY admin")
+    def get_users_list(self):
+        self.connection.ping()
+        self.cursor.execute("SELECT email, token, admin FROM users ORDER BY admin")
         return list(self.cursor.fetchall())
 
     def update_users(self):
-        temp = self.get_users()
+        temp = self.get_users_list()
         self.admins = [user['token'] for user in temp if user['admin'] == 1]
-        self.users = self.admins + [user['token'] for user in self.get_users() if user['admin'] == 0]
+        self.users = self.admins + [user['token'] for user in self.get_users_list() if user['admin'] == 0]
+        self.emails = [user['email'] for user in temp]
 
-    def create_user(self):
+    def create_user(self, mail):
         key = get_key()
-        insert_query = f"INSERT INTO users (token, admin) values ('{get_hash(key)}', false)"
+        insert_query = f"INSERT INTO users (email, token, admin) values ('{mail}', '{get_hash(key)}', false)"
         self.connection.ping()
         self.cursor.execute(insert_query)
         self.connection.commit()
         self.update_users()
         return key
+
+    def delete_user(self, email):
+        if email not in self.emails:
+            return f"User does not exist"
+        if email in self.admins:
+            return f"Access denied, can't delete admin"
+        insert_query = f"DELETE FROM users where email='{email}'"
+        self.connection.ping()
+        self.cursor.execute(insert_query)
+        self.connection.commit()
+        self.update_users()
+        return f"{email} has been deleted"
 
     def get_data_from_db(self):
         self.cursor.execute("SELECT * FROM students ORDER BY place")
@@ -82,6 +96,7 @@ class MySQL:
     def update_bd(self):
         self.cursor.execute("SELECT * FROM students ORDER BY place")
         self.db = self.cursor.fetchall()
+        self.update_users()
 
     def print_data(self):
         for row in self.db:

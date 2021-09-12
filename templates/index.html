@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>VVSU API</title>
+	<link rel="shortcut icon" href="vvsu.png" type="image/png">
+</head>
+<body>
+	<h1>Step 1</h1>
+	<ul>
+		<li>Go to /admin with ?password= and copy admin_token</li>
+    <a href="/admin?password=zxcdewqas3221">admin password</a>
+		<li>Go to /create-user with ?token='INSERT admin_token', and copy user auth token</li>
+	</ul>
+	<h1>Step 2</h1>
+	<h2>?token= IS REQUIRED PARAM FOR EACH REQUEST</h2>
+	<ul>
+		<li>/best/ - get first students, ?count= for count, default=1</li>
+    <form action="best/" method="GET" id="form">
+    <div>
+      <label>
+        Count:
+        <input type="number" name="count" value=1>
+      </label>
+    </div>
+    <div>
+      <label>
+        Token:
+        <input type="text" name="token">
+      </label>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+		<li>/last/ - get last students, ?count= for count, default=1</li>
+      <form action="last/" method="GET" id="form">
+    <div>
+      <label>
+        Count:
+        <input type="number" name="count" value=1>
+      </label>
+    </div>
+    <div>
+      <label>
+        Token:
+        <input type="text" name="token">
+      </label>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+		<li>/random/ - get random students, ?count= for count, default=1</li>
+        <form action="random/" method="GET" id="form">
+    <div>
+      <label>
+        Count:
+        <input type="number" name="count" value=1>
+      </label>
+    </div>
+    <div>
+      <label>
+        Token:
+        <input type="text" name="token">
+      </label>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+		<li>/place/ with required ?score= get place in table by total score</li>
+        <form action="place/" method="GET" id="form">
+    <div>
+      <label>
+        Score:
+        <input type="number" name="count" value=1>
+      </label>
+    </div>
+    <div>
+      <label>
+        Token:
+        <input type="text" name="token">
+      </label>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+		<li>/find/ with one of required params ?place= or ?snils= for get student (place > snils)</li>
+        <form action="find/" method="GET" id="form">
+    <div>
+      <label>
+        Place:
+        <input type="number" name="place">
+      </label>
+    </div>
+    <div>
+      <label>
+        Snils:
+        <input type="text" name="snils">
+      </label>
+    </div>
+    <div>
+      <label>
+        Token:
+        <input type="text" name="token">
+      </label>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+	</ul>
+	<h2>Only with admin token</h2>
+	<ul>
+		<li>/update/ - update database, ?token=</li>
+    <form action="update/" method="GET">
+        <div>
+      <label>
+        Email:
+        <input type="text" name="email" id="get_token">
+      </label>
+    </div>
+    <button type="submit">Update</button>
+    </form>
+		<li>/create-user/ - creating new user, ?token=</li>
+	</ul>
+
+
+
+
+</body>
+</html>
