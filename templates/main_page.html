@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>VVSU API</title>
+        <link rel="shortcut icon" href="vvsu.png" type="image/png">
+        <link rel="stylesheet" href="/static/style.css">
+    </head>
+
+    <body>
+        
+        <form class="box" action="main/" method="post">
+            <h1>?token= IS REQUIRED PARAM FOR EACH REQUEST</h1>
+            <h2>/best/ - get first students, ?count= for count, default=1</h2>
+            <h2>/last/ - get last students, ?count= for count, default=1</h2>
+            <h2>/random/ - get random students, ?count= for count, default=1</h2>
+            <h2>/place/ with required ?score= get place in table by total score</h2>
+            <h2>/find/ with one of required params ?place= or ?snils= for get student (place > snils)</h2>
+            <h1>Only with admin token</h1>
+            <h2>/update/ - update database</h2>
+            <h2>/delete/ - with required ?email= for delete user from database</h2>
+        </form>
+
+    </body>
+</html>
