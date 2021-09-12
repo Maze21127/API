@@ -134,6 +134,7 @@ def update_db():
         return "Invalid token, access denied", 403
     if get_hash(params['token']) not in sql.admins:
         return "Invalid token, access denied", 403
+
     return sql.is_new()
 
 

@@ -6,7 +6,7 @@ body{
 }
 
 .box{
-    width: 3000px;
+    width: 300px;
     padding: 50px;
     position: absolute;
     top: 50%;
@@ -28,7 +28,10 @@ body{
 
 .box a{
     color: white;
-    font-weight: 1300;
+}
+
+.box#main{
+    width: 1000px;
 }
 
 .box input[type = "text"]{
