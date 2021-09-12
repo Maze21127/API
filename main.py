@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, render_template, request, redirect
 from flask_restful import Api, reqparse
 from flask_mail import Mail, Message
-from itsdangerous import URLSafeTimedSerializer
 from MySQL import MySQL
 from create_auth import *
 from settings import *
@@ -11,10 +10,9 @@ from waitress import serve
 sql = MySQL(host=HOST, port=PORT, user=LOGIN, password=PASSWORD, database=DATABASE)
 
 app = Flask('MyFirstAPI')
-app.config.from_pyfile('config.cfg')
+app.config.from_pyfile('config.py')
 
 mail = Mail(app)
-ser = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
 @app.route('/')
